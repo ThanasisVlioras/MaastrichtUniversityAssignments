@@ -1,9 +1,58 @@
+import java.util.HashSet;
+import java.util.Arrays;
+
 public class Cipher {
-    /** This is used to validate message metadata. This is the beaufort cipher, so it is set to 9, as canvas states. */
-    public final String CypherId = "9";
+    /** This is used to validate message metadata. */
+    public final int CypherId;
 
+    // A better way to handle all of this would be enums.
+    public static final HashSet<Integer> AllowedIds = new HashSet<Integer>(Arrays.asList(1, 2, 5, 9));
 
-    private String encryptOrDecrypt(String plainText, String key) {
+    public Cipher(int cypherId) {
+        CypherId = cypherId;
+    }
+
+    /** Checks whether a character is in A-Z. */ 
+    private boolean isCharUppercase(char character) {
+        int value = (int)character;
+        return (value >= 65 && value <= 90);
+    }
+
+    /** Checks whether a character is in a-z. */
+    private boolean isCharLowercase(char character) {
+        int value = (int)character;
+        return (value >= 97 && value <= 122);
+    }
+
+    /** Checks whether a character is in A-Z or in a-z. */
+    private boolean isCharAlphabetical(char character) {
+        return isCharUppercase(character) || isCharLowercase(character);
+    }
+
+    /** Checks whether the entire key is made of alphabetical characters */
+    private boolean isKeyAlphabetical(String key) {
+        key = key.toLowerCase();
+
+        for (char character : key.toCharArray()) {
+            if (!isCharAlphabetical(character)) return false;
+        }
+
+        return true;
+    }
+
+    /** Turns alphabetical characters into ints where a=0, b=1 ... Non alphabetical characters return -1 */
+    private int normalizeChar(char character) {
+        if (!isCharAlphabetical(character)) return -1;
+
+        return (int)character - (isCharUppercase(character) ? 65 : 97);
+    }
+
+    /** Turns ints where a=0, b=1 ... into characters. Is undefined for incorrect ints.*/
+    private char denormalizeChar(int character, boolean upperCase) {
+        return (char)(character + (upperCase ? 65 : 97));
+    }
+
+    private String encryptOrDecryptVigenere(String plainText, String key, boolean decrypt) {
         if (!isKeyAlphabetical(key)) return "Non alphabetical key was given";
         key = key.toLowerCase();
         String cypherText = "";
@@ -16,14 +65,14 @@ public class Cipher {
                 continue;
             }
 
-            int keyValue = key.charAt(keyIndex) - 97;
-            int zeroIndexedCharacter = (int)character - (isCharUppercase(character) ? 65 : 97);
+            int keyValue = normalizeChar(key.charAt(keyIndex));
+            if (decrypt) keyValue = -keyValue;
+            int zeroIndexedCharacter = normalizeChar(character);
 
-            int zeroIndexedEncryptedCharacter = (keyValue - zeroIndexedCharacter) % 26;
+            int zeroIndexedEncryptedCharacter = (zeroIndexedCharacter + keyValue) % 26;
             if (zeroIndexedEncryptedCharacter < 0) zeroIndexedEncryptedCharacter += 26;
 
-            char finalCharacter =  (char)(zeroIndexedEncryptedCharacter + (isCharUppercase(character) ? 65 : 97));
-            cypherText += finalCharacter;
+            cypherText += denormalizeChar(zeroIndexedEncryptedCharacter, isCharUppercase(character));
 
             keyIndex = (keyIndex + 1) % key.length();
         }
@@ -31,42 +80,45 @@ public class Cipher {
         return cypherText;
     }
 
-    // Encryption and decryption are actually the same with this cypher. These are just aliases for encryptOrDecrypt.
-    public String encrypt(String plainText, String key) { return encryptOrDecrypt(plainText, key); }
-    public String decrypt(String plainText, String key) { return encryptOrDecrypt(plainText, key); }
+    private String atBash(String plainText) {
+        String cypherText = "";
+        
+        for (char character : plainText.toCharArray()) {
+            if (!isCharAlphabetical(character)) {
+                cypherText += character;
+                continue;
+            }
 
-    /** Checks whether a character is in A-Z. */ 
-    public boolean isCharUppercase(char character) {
-        int value = (int)character;
-        return (value >= 65 && value <= 90);
-    }
-
-    /** Checks whether a character is in a-z. */
-    public boolean isCharLowercase(char character) {
-        int value = (int)character;
-        return (value >= 97 && value <= 122);
-    }
-
-    /** Checks whether a character is in A-Z or in a-z. */
-    public boolean isCharAlphabetical(char character) {
-        return isCharUppercase(character) || isCharLowercase(character);
-    }
-
-    /** Checks whether the entire key is made of alphabetical characters */
-    public boolean isKeyAlphabetical(String key) {
-        key = key.toLowerCase();
-
-        for (char character : key.toCharArray()) {
-            if (!isCharAlphabetical(character)) return false;
+            cypherText += denormalizeChar(25 - normalizeChar(character), isCharUppercase(character));
         }
 
-        return true;
+        return cypherText;
     }
+
+    public String encrypt(String plainText, String key) { 
+        switch (CypherId) {
+            case 1: return encryptOrDecryptVigenere(plainText, key, false);
+            case 2: return atBash(plainText);
+            case 5: return encryptOrDecryptVigenere(plainText, key, false);
+            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true); 
+            default: return plainText;
+        }
+    }
+
+    public String decrypt(String plainText, String key) { 
+        switch (CypherId) {
+            case 1: return encryptOrDecryptVigenere(plainText, key, true);
+            case 2: return atBash(plainText);
+            case 5: return encryptOrDecryptVigenere(plainText, key, true);
+            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true); 
+            default: return plainText;
+        }
+     }
 }
 
 class CipherTest {
     public static void main(String[] args) {
-        Cipher cypher = new Cipher();
+        Cipher cypher = new Cipher(9);
 
         String key = "GRUMINIONBaNANA";
 

@@ -33,7 +33,7 @@ public class AlienChat {
     public static final String PASSWORD = "F4EF9A36-5FCD-4D27-8A0A-FC7C77D3DBB2";
     public static final String HOSTNAME = getenv("ALIENCHAT_SERVER", "alienchat.demo.leastfixedpoint.com");
     public static final short PORT = Short.parseShort(getenv("ALIENCHAT_PORT", "5999"));
-    public static Cipher CIPHER = new Cipher();
+    public static Cipher DEFAULTCIPHER = new Cipher(9);
     public static String VERYSECRETKEY = "GRUMINIONBANANA";
 
     /**
@@ -108,10 +108,11 @@ public class AlienChat {
         String[] metadataPieces = messageWithMetadata.split(",", 3);
 
         if (metadataPieces.length != 3) return "% The following message has an incorect metadata format:\n" + messageWithMetadata;
-        if (!metadataPieces[0].equals(CIPHER.CypherId)) return "% The following message uses a different cipher:\n" + messageWithMetadata;
-        if (!metadataPieces[1].equals(VERYSECRETKEY)) return "% The following message uses a different key:\n" + messageWithMetadata;
 
-        String decryptedMessage = CIPHER.decrypt(metadataPieces[2], VERYSECRETKEY);
+        int cipherId = Integer.parseInt(metadataPieces[0]);
+        if (!Cipher.AllowedIds.contains(cipherId)) return "% The following message uses an unknown cipher:\n" + messageWithMetadata;
+
+        String decryptedMessage = new Cipher(cipherId).decrypt(metadataPieces[2], metadataPieces[1]);
         return "% The following message IS" + (validateMessage(decryptedMessage) ? "" : " NOT") + " from our clan:\n" + decryptedMessage;
     }
 
@@ -129,7 +130,7 @@ public class AlienChat {
             if (line.startsWith("%%")) {
                 encoded = line.substring(2);
             } else {
-                encoded = CIPHER.CypherId + "," + VERYSECRETKEY + "," + CIPHER.encrypt(recognitionCode + " " + line, VERYSECRETKEY);
+                encoded = DEFAULTCIPHER.CypherId + "," + VERYSECRETKEY + "," + DEFAULTCIPHER.encrypt(recognitionCode + " " + line, VERYSECRETKEY);
             }
 
             toServer.println(encoded);
