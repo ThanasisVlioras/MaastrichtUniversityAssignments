@@ -33,7 +33,8 @@ public class AlienChat {
     public static final String PASSWORD = "F4EF9A36-5FCD-4D27-8A0A-FC7C77D3DBB2";
     public static final String HOSTNAME = getenv("ALIENCHAT_SERVER", "alienchat.demo.leastfixedpoint.com");
     public static final short PORT = Short.parseShort(getenv("ALIENCHAT_PORT", "5999"));
-    public static Cipher DEFAULTCIPHER = new Cipher(9);
+
+    public static final Cipher DEFAULTCIPHER = new Cipher(9);
     public static String VERYSECRETKEY = "GRUMINIONBANANA";
 
     /**
@@ -126,14 +127,14 @@ public class AlienChat {
              * to each message the program sends to the server.
              */
 
-            String encoded;
+            String encodedLine;
             if (line.startsWith("%%")) {
-                encoded = line.substring(2);
+                encodedLine = line.substring(2);
             } else {
-                encoded = DEFAULTCIPHER.CypherId + "," + VERYSECRETKEY + "," + DEFAULTCIPHER.encrypt(recognitionCode + " " + line, VERYSECRETKEY);
+                encodedLine = DEFAULTCIPHER.CypherId + "," + VERYSECRETKEY + "," + DEFAULTCIPHER.encrypt(recognitionCode + " " + line, VERYSECRETKEY);
             }
 
-            toServer.println(encoded);
+            toServer.println(encodedLine);
         });
     }
 

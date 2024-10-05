@@ -6,7 +6,7 @@ public class Cipher {
     public final int CypherId;
 
     // A better way to handle all of this would be enums.
-    public static final HashSet<Integer> AllowedIds = new HashSet<Integer>(Arrays.asList(1, 2, 5, 9));
+    public static final HashSet<Integer> AllowedIds = new HashSet<Integer>(Arrays.asList(1, 2, 3, 5, 8, 9));
 
     public Cipher(int cypherId) {
         CypherId = cypherId;
@@ -52,13 +52,13 @@ public class Cipher {
         return (char)(character + (upperCase ? 65 : 97));
     }
 
-    private String encryptOrDecryptVigenere(String plainText, String key, boolean decrypt) {
-        if (!isKeyAlphabetical(key)) return "Non alphabetical key was given";
-        key = key.toLowerCase();
-        String cypherText = "";
+    private String encryptOrDecryptVigenere(String input, String key, boolean decrypt, boolean autokey) {
+        if (!isKeyAlphabetical(key)) return "Non alphabetical key was given!";
+        if (!decrypt && autokey) key += input.replaceAll("[^A-Za-z]", "");
 
+        String cypherText = "";
         int keyIndex = 0;
-        for (char character : plainText.toCharArray()) {
+        for (char character : input.toCharArray()) {
             // If the character is not a letter then we just pass it through as is.
             if (!isCharAlphabetical(character)) {
                 cypherText += character;
@@ -72,7 +72,9 @@ public class Cipher {
             int zeroIndexedEncryptedCharacter = (zeroIndexedCharacter + keyValue) % 26;
             if (zeroIndexedEncryptedCharacter < 0) zeroIndexedEncryptedCharacter += 26;
 
-            cypherText += denormalizeChar(zeroIndexedEncryptedCharacter, isCharUppercase(character));
+            char finalCharacter = denormalizeChar(zeroIndexedEncryptedCharacter, isCharUppercase(character));
+            cypherText += finalCharacter;
+            if (decrypt && autokey) key += finalCharacter;
 
             keyIndex = (keyIndex + 1) % key.length();
         }
@@ -97,20 +99,24 @@ public class Cipher {
 
     public String encrypt(String plainText, String key) { 
         switch (CypherId) {
-            case 1: return encryptOrDecryptVigenere(plainText, key, false);
+            case 1: return encryptOrDecryptVigenere(plainText, key, false, false);
             case 2: return atBash(plainText);
-            case 5: return encryptOrDecryptVigenere(plainText, key, false);
-            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true); 
+            case 3: return encryptOrDecryptVigenere(plainText, "N", false, false);
+            case 5: return encryptOrDecryptVigenere(plainText, key, false, false);
+            case 8: return encryptOrDecryptVigenere(plainText, key, false, true);
+            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true, false); 
             default: return plainText;
         }
     }
 
     public String decrypt(String plainText, String key) { 
         switch (CypherId) {
-            case 1: return encryptOrDecryptVigenere(plainText, key, true);
+            case 1: return encryptOrDecryptVigenere(plainText, key, true, false);
             case 2: return atBash(plainText);
-            case 5: return encryptOrDecryptVigenere(plainText, key, true);
-            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true); 
+            case 3: return encryptOrDecryptVigenere(plainText, "N", true, false);
+            case 5: return encryptOrDecryptVigenere(plainText, key, true, false);
+            case 8: return encryptOrDecryptVigenere(plainText, key, true, true);
+            case 9: return encryptOrDecryptVigenere(atBash(plainText), atBash(key), true, false); 
             default: return plainText;
         }
      }
